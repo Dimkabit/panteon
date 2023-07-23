@@ -360,6 +360,58 @@
             FLS(`[gotoBlock]: Юхуу...їдемо до ${targetBlock}`);
         } else FLS(`[gotoBlock]: Йой... Такого блоку немає на сторінці: ${targetBlock}`);
     };
+    function formFieldsInit(options = {
+        viewPass: false,
+        autoHeight: false
+    }) {
+        document.body.addEventListener("focusin", (function(e) {
+            const targetElement = e.target;
+            if ("INPUT" === targetElement.tagName || "TEXTAREA" === targetElement.tagName) {
+                if (!targetElement.hasAttribute("data-no-focus-classes")) {
+                    targetElement.classList.add("_form-focus");
+                    targetElement.parentElement.classList.add("_form-focus");
+                }
+                targetElement.hasAttribute("data-validate") ? formValidate.removeError(targetElement) : null;
+            }
+        }));
+        document.body.addEventListener("focusout", (function(e) {
+            const targetElement = e.target;
+            if ("INPUT" === targetElement.tagName || "TEXTAREA" === targetElement.tagName) {
+                if (!targetElement.hasAttribute("data-no-focus-classes")) {
+                    targetElement.classList.remove("_form-focus");
+                    targetElement.parentElement.classList.remove("_form-focus");
+                }
+                targetElement.hasAttribute("data-validate") ? formValidate.validateInput(targetElement) : null;
+            }
+        }));
+        if (options.viewPass) document.addEventListener("click", (function(e) {
+            let targetElement = e.target;
+            if (targetElement.closest('[class*="__viewpass"]')) {
+                let inputType = targetElement.classList.contains("_viewpass-active") ? "password" : "text";
+                targetElement.parentElement.querySelector("input").setAttribute("type", inputType);
+                targetElement.classList.toggle("_viewpass-active");
+            }
+        }));
+        if (options.autoHeight) {
+            const textareas = document.querySelectorAll("textarea[data-autoheight]");
+            if (textareas.length) {
+                textareas.forEach((textarea => {
+                    const startHeight = textarea.hasAttribute("data-autoheight-min") ? Number(textarea.dataset.autoheightMin) : Number(textarea.offsetHeight);
+                    const maxHeight = textarea.hasAttribute("data-autoheight-max") ? Number(textarea.dataset.autoheightMax) : 1 / 0;
+                    setHeight(textarea, Math.min(startHeight, maxHeight));
+                    textarea.addEventListener("input", (() => {
+                        if (textarea.scrollHeight > startHeight) {
+                            textarea.style.height = `auto`;
+                            setHeight(textarea, Math.min(Math.max(textarea.scrollHeight, startHeight), maxHeight));
+                        }
+                    }));
+                }));
+                function setHeight(textarea, height) {
+                    textarea.style.height = `${height}px`;
+                }
+            }
+        }
+    }
     let formValidate = {
         getErrors(form) {
             let error = 0;
@@ -2703,7 +2755,7 @@
         classes
     };
     const extendedDefaults = {};
-    class Swiper {
+    class core_Swiper {
         constructor(...args) {
             let el;
             let params;
@@ -2718,7 +2770,7 @@
                     const newParams = utils_extend({}, params, {
                         el: containerEl
                     });
-                    swipers.push(new Swiper(newParams));
+                    swipers.push(new core_Swiper(newParams));
                 }));
                 return swipers;
             }
@@ -3050,26 +3102,26 @@
             return defaults;
         }
         static installModule(mod) {
-            if (!Swiper.prototype.__modules__) Swiper.prototype.__modules__ = [];
-            const modules = Swiper.prototype.__modules__;
+            if (!core_Swiper.prototype.__modules__) core_Swiper.prototype.__modules__ = [];
+            const modules = core_Swiper.prototype.__modules__;
             if ("function" === typeof mod && modules.indexOf(mod) < 0) modules.push(mod);
         }
         static use(module) {
             if (Array.isArray(module)) {
-                module.forEach((m => Swiper.installModule(m)));
-                return Swiper;
+                module.forEach((m => core_Swiper.installModule(m)));
+                return core_Swiper;
             }
-            Swiper.installModule(module);
-            return Swiper;
+            core_Swiper.installModule(module);
+            return core_Swiper;
         }
     }
     Object.keys(prototypes).forEach((prototypeGroup => {
         Object.keys(prototypes[prototypeGroup]).forEach((protoMethod => {
-            Swiper.prototype[protoMethod] = prototypes[prototypeGroup][protoMethod];
+            core_Swiper.prototype[protoMethod] = prototypes[prototypeGroup][protoMethod];
         }));
     }));
-    Swiper.use([ Resize, Observer ]);
-    const core = Swiper;
+    core_Swiper.use([ Resize, Observer ]);
+    const core = core_Swiper;
     function create_element_if_not_defined_createElementIfNotDefined(swiper, originalParams, params, checkProps) {
         if (swiper.params.createElements) Object.keys(checkProps).forEach((key => {
             if (!params[key] && true === params.auto) {
@@ -3626,61 +3678,9 @@
             on: {}
         });
     }
-    function initSlidersScroll() {
-        let sliderScrollItems = document.querySelectorAll(".swiper_scroll");
-        if (sliderScrollItems.length > 0) for (let index = 0; index < sliderScrollItems.length; index++) {
-            const sliderScrollItema = sliderScrollItems[index];
-            const sliderScrollBar = sliderScrollItema.querySelector(".swiper-scrollbar");
-            const sliderScroll = new core(sliderScrollItema, {
-                observer: true,
-                observeParents: true,
-                direction: "vertical",
-                slidesPerView: "auto",
-                freeMode: {
-                    enabled: true
-                },
-                scrollbar: {
-                    el: sliderScrollBar,
-                    draggable: true,
-                    snapOnRelease: false
-                },
-                mousewheel: {
-                    releaseOnEdges: true
-                }
-            });
-            sliderScroll.scrollbar.updateSize();
-        }
-    }
-    function initSlidersScrolls() {
-        let sliderScrollItems = document.querySelectorAll(".swiper_scrolls");
-        if (sliderScrollItems.length > 0) for (let index = 0; index < sliderScrollItems.length; index++) {
-            const sliderScrollItem = sliderScrollItems[index];
-            const sliderScrollBar = sliderScrollItem.querySelector(".swiper-scrollbars");
-            const sliderScroll = new core(sliderScrollItem, {
-                observer: true,
-                observeParents: true,
-                direction: "vertical",
-                slidesPerView: "auto",
-                freeMode: {
-                    enabled: true
-                },
-                scrollbar: {
-                    el: sliderScrollBar,
-                    draggable: true,
-                    snapOnRelease: false
-                },
-                mousewheel: {
-                    releaseOnEdges: true
-                }
-            });
-            sliderScroll.scrollbar.updateSize();
-        }
-    }
     initSlider();
     initSliders();
     initTrainerSliders();
-    initSlidersScroll();
-    initSlidersScrolls();
     let addWindowScrollEvent = false;
     setTimeout((() => {
         if (addWindowScrollEvent) {
@@ -3774,25 +3774,13 @@
     }
     const da = new DynamicAdapt("max");
     da.init();
-    let center = [ 48.8866527839977, 2.34310679732974 ];
-    function init() {
-        let map = new ymaps.Map("map-test", {
-            center,
-            zoom: 17
-        });
-        map.controls.remove("geolocationControl");
-        map.controls.remove("searchControl");
-        map.controls.remove("trafficControl");
-        map.controls.remove("typeSelector");
-        map.controls.remove("fullscreenControl");
-        map.controls.remove("zoomControl");
-        map.controls.remove("rulerControl");
-        map.behaviors.disable([ "scrollZoom" ]);
-    }
-    ymaps.ready(init);
     window["FLS"] = true;
     isWebp();
     addLoadedClass();
     menuInit();
+    formFieldsInit({
+        viewPass: false,
+        autoHeight: false
+    });
     formSubmit();
 })();
